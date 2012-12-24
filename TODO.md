@@ -9,3 +9,5 @@ TODO:
     - Use --daemonize.
     - But find a way to clean it up. (--writepid will help.)
 + Put everything in a single pe command.
+- Allow a disconnected joining pair to reconnect.
+  - Fails because telnetd dies.
