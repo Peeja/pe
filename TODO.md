@@ -8,4 +8,4 @@ TODO:
   die in the background.
     - Use --daemonize.
     - But find a way to clean it up. (--writepid will help.)
-- Put everything in a single pe command.
++ Put everything in a single pe command.

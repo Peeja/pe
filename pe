@@ -1,0 +1,52 @@
+#!/bin/sh
+
+set -e
+
+usage() {
+  echo "Usage:"
+  echo "  $0 host"
+  echo "  $0 join <address>"
+}
+
+main() {
+  case "$1" in
+    host)
+      host "${@:2}" ;;
+    join)
+      join "${@:2}" ;;
+    # This is hacky. It only works because telnetd passes us -p.
+    -p)
+      springboard_to_tmux ;;
+    *)
+      usage ;;
+  esac
+}
+
+host() {
+  sudo -p "Local password:" echo # Activate sudo
+
+  sudo -n openvpn --user "$USER" --dev tun --ifconfig 10.4.0.1 10.4.0.2 --log host.log &
+  /usr/libexec/telnetd -p $0 -debug 9999 &>/dev/null &
+  wemux
+}
+
+join() {
+  pair_host=${1:?"Must provide host name"}
+
+  sudo -p "Local password:" echo # Activate sudo
+
+  sudo -n openvpn --user "$USER" --remote "$pair_host" --dev tun --ifconfig 10.4.0.2 10.4.0.1 --log join.log &
+  telnet 10.4.0.1 9999
+}
+
+springboard_to_tmux() {
+  exec /usr/local/bin/wemux
+}
+
+finish() {
+  kill 0
+  wait
+}
+
+trap 'finish' SIGINT SIGTERM EXIT
+main "$@"
