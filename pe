@@ -23,9 +23,15 @@ main() {
 }
 
 host() {
-  sudo -p "Local password:" echo # Activate sudo
+  sudo -p "Local password (sudo):" echo # Activate sudo
 
-  sudo -n openvpn --user "$USER" --dev tun --ifconfig 10.4.0.1 10.4.0.2 --log host.log &
+  sudo -n openvpn \
+            --user "$USER" \
+            --dev tun \
+            --ifconfig 10.4.0.1 10.4.0.2 \
+            --log host.log \
+            &
+
   /usr/libexec/telnetd -p $0 -debug 9999 &>/dev/null &
   wemux
 }
@@ -33,9 +39,16 @@ host() {
 join() {
   pair_host=${1:?"Must provide host name"}
 
-  sudo -p "Local password:" echo # Activate sudo
+  sudo -p "Local password (sudo):" echo # Activate sudo
 
-  sudo -n openvpn --user "$USER" --remote "$pair_host" --dev tun --ifconfig 10.4.0.2 10.4.0.1 --log join.log &
+  sudo -n openvpn \
+            --user "$USER" \
+            --remote "$pair_host" \
+            --dev tun \
+            --ifconfig 10.4.0.2 10.4.0.1 \
+            --log join.log \
+            &
+
   telnet 10.4.0.1 9999
 }
 
