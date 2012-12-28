@@ -1,2 +1,4 @@
-host.log
-join.log
+ca
+shared
+users
+*.log

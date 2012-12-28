@@ -4,16 +4,26 @@ set -e
 
 usage() {
   echo "Usage:"
-  echo "  $0 host"
-  echo "  $0 join <address>"
+  echo "  $0 host <own-username> <pair-username>"
+  echo "  $0 join <own-username> <pair-username> <address>"
+  echo "  $0 generate-cert <username>"
+  echo "  $0 ca init"
 }
 
 main() {
+  # For now, we can share a config file.  In real life, users will need a copy
+  # (or a version) of their own.
+  export OPENSSL_CONF="$PWD/openssl.cnf"
+
   case "$1" in
     host)
       host "${@:2}" ;;
     join)
       join "${@:2}" ;;
+    generate-cert)
+      generate_cert "${@:2}" ;;
+    ca)
+      ca "${@:2}" ;;
     # This is hacky. It only works because telnetd passes us -p.
     -p)
       springboard_to_tmux ;;
@@ -23,11 +33,22 @@ main() {
 }
 
 host() {
-  sudo -p "Local password (sudo):" echo # Activate sudo
+  own_username=${1:?"Must provide own username"}
+  pair_username=${2:?"Must provide pair's username"}
+
+  activate_sudo
 
   sudo -n openvpn \
             --user "$USER" \
             --dev tun \
+            \
+            --tls-server \
+            --dh shared/gdh1024.pem \
+            --ca shared/cacert.pem \
+            --cert "users/$own_username/certificate.pem" \
+            --key "users/$own_username/key.pem" \
+            --tls-remote "$pair_username.users.pairexchange.com." \
+            \
             --ifconfig 10.4.0.1 10.4.0.2 \
             --log host.log \
             &
@@ -37,14 +58,23 @@ host() {
 }
 
 join() {
-  pair_host=${1:?"Must provide host name"}
+  own_username=${1:?"Must provide own username"}
+  pair_username=${2:?"Must provide pair's username"}
+  host_address=${3:?"Must provide host address"}
 
-  sudo -p "Local password (sudo):" echo # Activate sudo
+  activate_sudo
 
   sudo -n openvpn \
             --user "$USER" \
-            --remote "$pair_host" \
+            --remote "$host_address" \
             --dev tun \
+            \
+            --tls-client \
+            --ca shared/cacert.pem \
+            --cert "users/$own_username/certificate.pem" \
+            --key "users/$own_username/key.pem" \
+            --tls-remote "$pair_username.users.pairexchange.com." \
+            \
             --ifconfig 10.4.0.2 10.4.0.1 \
             --log join.log \
             &
@@ -52,8 +82,64 @@ join() {
   telnet 10.4.0.1 9999
 }
 
+generate_cert() {
+  username=${1:?"Must provide username"}
+  mkdir -p "users/$username"
+  (
+    cd "users/$username"
+    openssl req -nodes -new -keyout key.pem -subj "/CN=$username.users.pairexchange.com." -out request.pem
+
+    # This represents an API call to PairExchange.  In real life, this would be
+    # authenticated.  For the purposes of this prototype, the CA always signs
+    # the certificate.
+    (cd ../..; ca sign) < request.pem > certificate.pem
+  )
+}
+
+ca() {
+  ca_subcommand() {
+    case "$1" in
+      init)
+        init "${@:2}" ;;
+      sign)
+        sign "${@:2}" ;;
+    esac
+  }
+
+  init() {
+    mkdir ../shared
+    openssl dhparam -out ../shared/dh1024.pem 1024
+
+    # Set up the CA file structure.
+    mkdir certs crl newcerts private
+    echo "01" > serial
+    touch index.txt
+
+    # The private key goes in ca/, representing the fact that it remains on the
+    # server.  The certificate is distributed to users, so we copy it to shared/.
+    openssl req -nodes -new -x509 -keyout private/cakey.pem -out cacert.pem
+    cp cacert.pem ../shared
+
+    # It's a little messy, but it reflects actual messiness in the IRL use.
+  }
+
+  sign() {
+    openssl x509 -req -CA cacert.pem -CAkey private/cakey.pem -CAserial serial
+  }
+
+  (
+    mkdir -p ca
+    cd ca
+    ca_subcommand "$@"
+  )
+}
+
 springboard_to_tmux() {
   exec /usr/local/bin/wemux
+}
+
+activate_sudo() {
+  sudo -vp "Local password (sudo):"
 }
 
 finish() {
