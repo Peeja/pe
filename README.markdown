@@ -1,9 +1,11 @@
 # The `pe` command: a prototype.
 
 This is a prototype of the `pe` command for pairing through PairExchange.  It
-sets up a point-to-point VPN and a shared Tmux session.  To use it, you'll need:
+sets up a point-to-point VPN and a shared Tmux session.  To use it, you'll
+need (with OS X installation info shown):
 
 * OpenVPN (`brew install openvpn`)
+* A tun/tap device driver (<http://tuntaposx.sourceforge.net/>)
 * Wemux (`brew install wemux`)
 
 First, set up the CA (certificate authority).  This represents PairExchange
