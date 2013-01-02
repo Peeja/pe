@@ -8,6 +8,7 @@ TODO:
   die in the background.
     - Use --daemonize.
     - But find a way to clean it up. (--writepid will help.)
+- Make sure it's impossible for the guest to run commands invisibly through Tmux.
 - Allow a disconnected joining pair to reconnect.
   - Fails because telnetd dies.
 - Fail gracefully when the wrong user connects.
