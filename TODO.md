@@ -3,6 +3,8 @@ TODO:
 + Run with a tmux session.
 + Put everything in a single pe command.
 + Require certificate to connect.
+- Don't require superuser privileges to run the command each time.
+  - Instead, use a LaunchAgent or something to hold the privileges so that the command for each session can be unprivileged.
 - Set up DNS.
 - Make openvpn stop the script if it fails to initialize, rather than simply
   die in the background.
