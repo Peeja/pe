@@ -8,6 +8,12 @@ need (with OS X installation info shown):
 * A tun/tap device driver (<http://tuntaposx.sourceforge.net/>)
 * Wemux (`brew install wemux`)
 
+Note: At least via Homebrew, theh OpenVPN command is installed in an `sbin`
+directory, not a `bin`, so it may not be in your path by default. For
+Homebrew, add `/usr/local/sbin` to your path.
+
+---
+
 First, set up the CA (certificate authority).  This represents PairExchange
 itself.
 
